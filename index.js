@@ -11,7 +11,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 app.get('/', (req, res) => {
-    res.send('Hello, TypeScript + Node.js + Express!');
+    res.send("Hello, there!! this is dating app's backend");
 });
 
 app.use('/api', routes);
