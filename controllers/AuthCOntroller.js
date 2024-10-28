@@ -28,7 +28,6 @@ const signin = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const age = await calculateAge(dob)
-        console.log(age, '<== age')
         const user = new User({
             profileFor, gender, firstName, lastName, dob, religion,
             motherTongue, country, email, mobile, password: hashedPassword,
@@ -89,10 +88,23 @@ const login = async (req, res) => {
     }
 }
 
+const logout = async (req, res) => {
+    try {
+        return res.status(StatusCodes.OK).json({
+            message: "Successfully logged out",
+            success: true,
+        });
+    } catch (error) {
+        return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Server error',
+            error: error.message || 'Unknown error',
+        });
+    }
+}
+
 const search = async (req, res) => {
     try {
         const { gender, ageFrom, ageTo, religion, motherTongue } = req.query;
-        console.log(req.query, '<=== req.body')
 
         const user = await User.find({ gender: gender, religion: religion, motherTongue: motherTongue });
 
@@ -106,4 +118,4 @@ const search = async (req, res) => {
     }
 }
 
-module.exports = { signin, login, search }
+module.exports = { signin, login, logout, search }
