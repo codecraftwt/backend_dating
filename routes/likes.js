@@ -1,14 +1,14 @@
 
 const express = require('express');
 const authenticateMiddleware = require('../middlewares/Authenticcate');
-const { visitProfile, getVisitors } = require('../controllers/VisitorsController');
+const { likeProfile, getLikedProfiles } = require('../controllers/LikesController');
 const router = express.Router();
 
 router.get('/', (req, res) => {
     res.send('List of products auth');
 });
 
-router.post('/visit', authenticateMiddleware, visitProfile);
-router.get('/:userId', authenticateMiddleware, getVisitors);
+router.post('/like-profile', authenticateMiddleware, likeProfile);
+router.get('/:profileId', authenticateMiddleware, getLikedProfiles);
 
 module.exports = router;
