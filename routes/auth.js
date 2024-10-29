@@ -9,7 +9,7 @@ router.get('/', (req, res) => {
 
 router.post('/login', login);
 router.post('/signin', signin);
-router.post('/signout', logout);
+router.get('/signout', logout);
 router.get('/search', search);
 
 
