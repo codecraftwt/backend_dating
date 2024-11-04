@@ -13,7 +13,8 @@ const userSchema = new mongoose.Schema({
     mobile: { type: String, require: true },
     age: { type: Number, require: false },
     password: { type: String, require: true },
-    isDelete: { type: Number, default: 1 }
+    isDelete: { type: Number, default: 1 },
+    profilePhoto: { type: String }
 }, { timestamps: true });
 
 // userSchema.method({
