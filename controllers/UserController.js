@@ -60,6 +60,21 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find().select('-password'); 
+
+        if (users.length === 0) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'No users found' });
+        }
+
+        res.status(StatusCodes.OK).json({ users });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error', error: error.message || 'Unknown error' });
+    }
+};
+
 const updateUserProfile = async (req, res) => {
     try {
         const userId = req.params.id;
@@ -96,7 +111,4 @@ const deleteUser = async (req, res) => {
     }
 };
 
-
-
-
-module.exports = { createUser, getUserProfile, updateUserProfile, deleteUser }
+module.exports = { createUser, getUserProfile, getAllUsers, updateUserProfile, deleteUser }

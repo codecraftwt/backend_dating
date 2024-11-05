@@ -11,13 +11,16 @@ const likeProfile = async (req, res) => {
 
     try {
         const existingLike = await Likes.findOne({ userId, likedProfileId });
+        console.log(existingLike, '<=== existingLike')
 
         if (existingLike) {
-            await Likes.deleteOne({ userId, likedProfileId });
-            return res.status(StatusCodes.OK).json({ message: 'Profile disliked successfully' });
+            existingLike.isLike = !existingLike.isLike
+            // await Likes.deleteOne({ userId, likedProfileId });
+            await Likes.findByIdAndUpdate(existingLike._id, existingLike);
+            return res.status(StatusCodes.OK).json({ message: `Profile ${existingLike.isLike === true ? 'liked' : 'disliked'}  successfully`, existingLike });
         }
 
-        const like = new Likes({ userId, likedProfileId });
+        const like = new Likes({ userId, likedProfileId, isLike: true });
         await like.save();
 
         res.status(StatusCodes.CREATED).json({ message: 'Profile liked successfully', like });
