@@ -1,7 +1,7 @@
 
 const express = require('express');
 const authenticateMiddleware = require('../middlewares/Authenticcate');
-const { createUser, getUserProfile, updateUserProfile, deleteUser, getAllUsers } = require('../controllers/UserController');
+const { createUser, getUserProfile, updateUserProfile, deleteUser, getAllUsers, getMatchingUsers } = require('../controllers/UserController');
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -10,6 +10,7 @@ router.get('/', (req, res) => {
 
 router.post('/signup', createUser);
 router.get('/all', authenticateMiddleware, getAllUsers);
+router.get('/matching-users', authenticateMiddleware, getMatchingUsers);
 router.get('/:id', authenticateMiddleware, getUserProfile);
 router.put('/:id', authenticateMiddleware, updateUserProfile);
 router.delete('/:id', authenticateMiddleware, deleteUser);
