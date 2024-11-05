@@ -13,7 +13,8 @@ const likeProfile = async (req, res) => {
         const existingLike = await Likes.findOne({ userId, likedProfileId });
 
         if (existingLike) {
-            return res.status(StatusCodes.CONFLICT).json({ message: 'Profile already liked' });
+            await Likes.deleteOne({ userId, likedProfileId });
+            return res.status(StatusCodes.OK).json({ message: 'Profile disliked successfully' });
         }
 
         const like = new Likes({ userId, likedProfileId });
