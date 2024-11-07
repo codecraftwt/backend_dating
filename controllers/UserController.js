@@ -62,13 +62,13 @@ const getUserProfile = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password'); 
+        const users = await User.find().select('-password');
 
         if (users.length === 0) {
             return res.status(StatusCodes.NOT_FOUND).json({ message: 'No users found' });
         }
 
-        res.status(StatusCodes.OK).json({ users });
+        res.status(StatusCodes.OK).json({ data: users, status: StatusCodes.OK, success: true, message: 'Users fetched successfully!!' });
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error', error: error.message || 'Unknown error' });
