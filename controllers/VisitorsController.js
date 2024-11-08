@@ -45,7 +45,7 @@ const getVisitors = async (req, res) => {
             .sort({ visitedAt: -1 })
             .limit(10);
 
-        res.status(StatusCodes.OK).json(visits);
+        res.status(StatusCodes.OK).json({ data: visits, status: StatusCodes.OK, success: true, message: 'Users fetched successfully!!' });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching visitors', error });
     }
