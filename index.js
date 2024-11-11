@@ -19,7 +19,8 @@ const corsOptions = {
     // origin: true,
     // methods: 'POST,GET,PUT,OPTIONS,DELETE',
     // allowedHeaders: 'Content-Type, Authorization',
-    origin: ['http://localhost:4200', 'http://localhost:5000']
+    // origin: ['http://localhost:4200', 'http://localhost:5000', '*']
+    origin: '*'
 };
 
 app.use(cors(corsOptions));

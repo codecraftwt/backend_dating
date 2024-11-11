@@ -37,6 +37,21 @@ const getVisitors = async (req, res) => {
 
     try {
 
+        const visits = await Visit.find({ visitorId: userId })
+            .sort({ visitedAt: -1 })
+            .limit(10);
+
+        res.status(StatusCodes.OK).json({ data: visits, status: StatusCodes.OK, success: true, message: 'Users fetched successfully!!' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching visitors', error });
+    }
+};
+
+const getVisited = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+
         // const visits = await Visit.find({ visitedId: userId })
         //     .sort({ visitedAt: -1 })
         //     .limit(10);
@@ -52,4 +67,4 @@ const getVisitors = async (req, res) => {
 };
 
 
-module.exports = { visitProfile, getVisitors };
+module.exports = { visitProfile, getVisitors, getVisited };

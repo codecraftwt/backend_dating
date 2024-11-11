@@ -1,7 +1,7 @@
 
 const express = require('express');
 const authenticateMiddleware = require('../middlewares/Authenticcate');
-const { visitProfile, getVisitors } = require('../controllers/VisitorsController');
+const { visitProfile, getVisitors, getVisited } = require('../controllers/VisitorsController');
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -10,5 +10,6 @@ router.get('/', (req, res) => {
 
 router.post('/visit', authenticateMiddleware, visitProfile);
 router.get('/:userId', authenticateMiddleware, getVisitors);
+router.get('/visited/:userId', authenticateMiddleware, getVisited);
 
 module.exports = router;
