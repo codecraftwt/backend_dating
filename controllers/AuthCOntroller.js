@@ -1,12 +1,20 @@
 const { StatusCodes } = require("http-status-codes");
 const User = require("../models/user");
+const Otp = require("../models/otp");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const dotenv = require('dotenv');
 const calculateAge = require("../utils/getAge");
 dotenv.config();
 
+const otpGenerator = require('otp-generator');
+const twilio = require('twilio')
+
 const JWT_SECRET = process.env.JWT_SECRET;
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+
+const twilioClient = new twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 const signin = async (req, res) => {
     try {
@@ -119,4 +127,34 @@ const search = async (req, res) => {
     }
 }
 
-module.exports = { signin, login, logout, search }
+const sendOtp = async (req, res) => {
+    try {
+        const { phoneNumber } = req.body
+
+        const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false })
+        const cDate = new Date();
+        await Otp.findOneAndUpdate(
+            { phoneNumber },
+            { otp, otpExpiration: new Date(cDate.getTime()) },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+
+        twilioClient.messages.create({
+            body: `Your OTP is ${otp}`,
+            to: phoneNumber,
+            from: "+91917276182237"
+        })
+        res.status(StatusCodes.CREATED).json({
+            message: 'OTP sent successfully',
+            success: true
+        });
+
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Server error',
+            error: error.message || 'Unknown error'
+        });
+    }
+}
+
+module.exports = { signin, login, logout, search, sendOtp }
