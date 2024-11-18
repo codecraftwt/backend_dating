@@ -6,6 +6,7 @@ const Room = require("../models/room");
 const getMessage = async (req, res) => {
     try {
         const messages = await Message.find({ roomId: req.params.roomId }).sort({ timestamp: 1 });
+        req.io.emit('joinroom', messages)
         res.json(messages);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch messages' });
@@ -22,7 +23,8 @@ const sendMessage = async (req, res) => {
             message,
         });
 
-        await newMessage.save();
+        const messages = await newMessage.save();
+        req.io.emit('message', messages)
         res.status(201).json(newMessage);
     } catch (err) {
         res.status(500).json({ error: 'Failed to send message' });
@@ -57,7 +59,7 @@ const createRoom = async (req, res) => {
             name,
             participants,
         });
-
+        req.io.emit('createroom', newRoom)
         await newRoom.save();
 
         res.status(201).json(newRoom);
