@@ -5,7 +5,6 @@ const dotenv = require('dotenv')
 const express = require('express')
 const http = require('http');
 const cors = require('cors');
-const Message = require('./models/message');
 
 const socketIO = require('socket.io');
 
