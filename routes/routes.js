@@ -6,6 +6,7 @@ const visitorsRoutes = require('./visitors');
 const likesRoutes = require('./likes');
 const uploadRoutes = require('./upload');
 const chatRoutes = require('./chat');
+const chatNewRoutes = require('./chatNew');
 
 const router = express();
 
@@ -19,5 +20,6 @@ router.use('/visitors', visitorsRoutes);
 router.use('/likes', likesRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/messages', chatRoutes);
+router.use('/chat', chatNewRoutes);
 
 module.exports = router;
