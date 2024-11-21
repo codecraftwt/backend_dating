@@ -80,13 +80,35 @@ const sendMessage = async (req, res) => {
 
 const getAllRooms = async (req, res) => {
     try {
-        const rooms = await Room.find({}, '-chat');
+        // const rooms = await Room.find({}, '-chat');
+        const rooms = await Room.find({}, '-chat')
+            .populate({
+                path: 'chat',
+                options: { sort: { 'timestamp': -1 }, limit: 1 }
+            });
 
-        if (rooms.length === 0) {
-            return res.status(StatusCodes.OK).json({ status: StatusCodes.OK, data: rooms, message: 'No rooms found' });
+        const roomsWithLatestMessage = rooms.map(room => {
+            if (room.chat && room.chat.length > 0) {
+                room.chat.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                const latestMessage = room.chat[0];
+
+                return {
+                    ...room.toObject(),
+                    chat: [latestMessage]
+                };
+            }
+            return {
+                ...room.toObject(),
+                chat: []
+            };
+        });
+
+        if (roomsWithLatestMessage.length === 0) {
+            return res.status(StatusCodes.OK).json({ status: StatusCodes.OK, data: roomsWithLatestMessage, message: 'No rooms found' });
         }
         req.io.emit('rooms')
-        res.status(StatusCodes.OK).json({ status: StatusCodes.OK, data: rooms, message: 'Rooms fetched successfully' });
+        res.status(StatusCodes.OK).json({ status: StatusCodes.OK, data: roomsWithLatestMessage, message: 'Rooms fetched successfully' });
     } catch (err) {
         console.error('Error fetching rooms:', err);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to fetch rooms' });
@@ -102,7 +124,7 @@ const getRoom = async (req, res) => {
             return res.status(StatusCodes.NOT_FOUND).json({ message: 'Room not found' });
         }
         req.io.emit('room', roomId)
-        res.status(StatusCodes.OK).json(room);
+        res.status(StatusCodes.OK).json({ data: room, status: StatusCodes.OK, success: true, message: 'Room fetched successfully' });
     } catch (err) {
         console.error('Error fetching rooms:', err);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to fetch rooms' });
