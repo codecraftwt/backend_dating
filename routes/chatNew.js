@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
 
 router.post('/create-room', authenticateMiddleware, createRoom);
 router.post('/:roomId/messages', authenticateMiddleware, sendMessage);
-router.get('/rooms', authenticateMiddleware, getAllRooms);
-router.get('/rooms/:roomId', authenticateMiddleware, getRoom);
+router.get('/rooms/:userId', authenticateMiddleware, getAllRooms);
+router.get('/room/:roomId', authenticateMiddleware, getRoom);
 
 module.exports = router;

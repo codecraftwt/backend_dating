@@ -2,6 +2,8 @@ const { StatusCodes } = require("http-status-codes");
 const Message = require('./../models/messageNew');
 const User = require("../models/user");
 const Room = require("../models/roomNew");
+const { mongoose } = require("mongoose");
+const { ObjectId } = mongoose.Types;
 
 const createRoom = async (req, res) => {
     const { createdBy, createdWith } = req.body;
@@ -15,13 +17,15 @@ const createRoom = async (req, res) => {
         const createdWithUser = await User.findById(createdWith).select('firstName lastName profilePhoto _id');
         const existingRoom = await Room.findOne({
             $or: [
-                { createdBy: createdBy, createdWith: createdWith },
-                { createdBy: createdWith, createdWith: createdBy },
+                // { createdBy: createdBy, createdWith: createdWith },
+                // { createdBy: createdWith, createdWith: createdBy },
+                { 'createdBy._id': new ObjectId(createdBy), 'createdWith._id': new ObjectId(createdWith) },
+                { 'createdBy._id': new ObjectId(createdWith), 'createdWith._id': new ObjectId(createdBy) }
             ],
         });
 
         if (existingRoom) {
-            return res.status(StatusCodes.BAD_REQUEST).json({ error: 'Room with these participants already exists' });
+            return res.status(StatusCodes.BAD_REQUEST).json({ status: StatusCodes.BAD_REQUEST, success: false, message: 'Room with these participants already exists' });
         }
 
         const newRoom = new Room({
@@ -31,7 +35,7 @@ const createRoom = async (req, res) => {
         req.io.emit('createroom', newRoom)
         await newRoom.save();
 
-        res.status(StatusCodes.CREATED).json(newRoom);
+        res.status(StatusCodes.CREATED).json({ data: newRoom, status: StatusCodes.CREATED, success: true, message: 'Room created successfully..!!' });
     } catch (err) {
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to create room' });
     }
@@ -79,9 +83,19 @@ const sendMessage = async (req, res) => {
 };
 
 const getAllRooms = async (req, res) => {
+    const { userId } = req.params;
+    console.log(userId, 'userId')
     try {
         // const rooms = await Room.find({}, '-chat');
-        const rooms = await Room.find({}, '-chat')
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        const rooms = await Room.find({
+            $or: [
+                { 'createdBy._id': new ObjectId(userId) },
+                { 'createdWith._id': new ObjectId(userId) }
+            ]
+        }, '-chat')
             .populate({
                 path: 'chat',
                 options: { sort: { 'timestamp': -1 }, limit: 1 }
