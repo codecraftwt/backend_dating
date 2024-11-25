@@ -22,10 +22,31 @@ const createRoom = async (req, res) => {
                 { 'createdBy._id': new ObjectId(createdBy), 'createdWith._id': new ObjectId(createdWith) },
                 { 'createdBy._id': new ObjectId(createdWith), 'createdWith._id': new ObjectId(createdBy) }
             ],
+        }, '-chat')
+            .populate({
+                path: 'chat',
+                options: { sort: { 'timestamp': -1 }, limit: 1 }
+            });;
+
+        const roomsWithLatestMessage = [existingRoom].map(room => {
+            if (room.chat && room.chat.length > 0) {
+                room.chat.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                const latestMessage = room.chat[0];
+
+                return {
+                    ...room.toObject(),
+                    chat: [latestMessage]
+                };
+            }
+            return {
+                ...room.toObject(),
+                chat: []
+            };
         });
 
         if (existingRoom) {
-            return res.status(StatusCodes.BAD_REQUEST).json({ status: StatusCodes.BAD_REQUEST, success: false, message: 'Room with these participants already exists' });
+            return res.status(StatusCodes.OK).json({ status: StatusCodes.BAD_REQUEST, success: false, message: 'Room with these participants already exists', data: roomsWithLatestMessage });
         }
 
         const newRoom = new Room({
@@ -145,4 +166,50 @@ const getRoom = async (req, res) => {
     }
 };
 
-module.exports = { createRoom, sendMessage, getAllRooms, getRoom };
+const deleteRoom = async (req, res) => {
+    const { roomId } = req.params;
+    try {
+        const room = await Room.findByIdAndDelete(roomId);
+
+        if (!room) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Room not found' });
+        }
+        req.io.emit('room', roomId)
+        res.status(StatusCodes.OK).json({ data: room, status: StatusCodes.OK, success: true, message: 'Room deleted successfully' });
+    } catch (err) {
+        console.error('Error fetching rooms:', err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to fetch rooms' });
+    }
+};
+
+const deleteMessage = async (req, res) => {
+    const { roomId, messageId } = req.params;
+    try {
+        const room = await Room.findById(roomId);
+        if (!room) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Room not found' });
+        }
+
+        const messageIndex = room.chat.findIndex(msg => msg._id.toString() === messageId);
+        if (messageIndex === -1) {
+            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Message not found' });
+        }
+
+        room.chat.splice(messageIndex, 1);
+
+        await room.save();
+
+        req.io.emit('messageDeleted', { roomId, messageId });
+
+        res.status(StatusCodes.OK).json({
+            message: 'Message deleted successfully',
+            status: StatusCodes.OK,
+            success: true
+        });
+    } catch (err) {
+        console.error('Error deleting message:', err);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to delete message' });
+    }
+};
+
+module.exports = { createRoom, sendMessage, getAllRooms, getRoom, deleteMessage, deleteRoom };

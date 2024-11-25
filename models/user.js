@@ -14,7 +14,8 @@ const userSchema = new mongoose.Schema({
     age: { type: Number, require: false },
     password: { type: String, require: true },
     isDelete: { type: Number, default: 1 },
-    profilePhoto: { type: String }
+    profilePhoto: { type: String },
+    likes: { type: Number, default: 0 }
 }, { timestamps: true });
 
 // userSchema.method({

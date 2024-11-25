@@ -15,7 +15,12 @@ const likeProfile = async (req, res) => {
 
         if (existingLike) {
             existingLike.isLike = !existingLike.isLike
-            // await Likes.deleteOne({ userId, likedProfileId });
+
+            if (existingLike.isLike) {
+                await User.findByIdAndUpdate(likedProfileId, { $inc: { likes: 1 } });
+            } else {
+                await User.findByIdAndUpdate(likedProfileId, { $inc: { likes: -1 } });
+            }
             await Likes.findByIdAndUpdate(existingLike._id, existingLike);
             return res.status(StatusCodes.OK).json({ message: `Profile ${existingLike.isLike === true ? 'liked' : 'disliked'}  successfully`, existingLike });
         }

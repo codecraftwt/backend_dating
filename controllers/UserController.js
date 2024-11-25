@@ -53,7 +53,7 @@ const getUserProfile = async (req, res) => {
             return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
         }
 
-        res.status(StatusCodes.OK).json({ user });
+        res.status(StatusCodes.OK).json({ user: user, message: 'User profile fetched successfully', status: StatusCodes.OK, success: true });
     } catch (error) {
         console.error('Error fetching user profile:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error', error: error.message || 'Unknown error' });
