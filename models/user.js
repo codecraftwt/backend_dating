@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, require: true },
     isDelete: { type: Number, default: 1 },
     profilePhoto: { type: String },
+    otherPhotos: { type: [String], default: [] },
     likes: { type: Number, default: 0 }
 }, { timestamps: true });
 
