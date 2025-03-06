@@ -14,7 +14,7 @@ const authenticateMiddleware = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = { id: decoded.id };
+        req.user = { id: decoded._id };
         next();
     } catch (error) {
         console.error('Authentication error:', error);

@@ -61,8 +61,10 @@ const getUserProfile = async (req, res) => {
 };
 
 const getAllUsers = async (req, res) => {
+    const loggedInUserId = req.user.id;
     try {
-        const users = await User.find().select('-password');
+        // const users = await User.find().select('-password'); //all users
+        const users = await User.find({ _id: { $ne: loggedInUserId } }).select('-password'); // exclude loggedIn user
 
         if (users.length === 0) {
             return res.status(StatusCodes.NOT_FOUND).json({ message: 'No users found' });
