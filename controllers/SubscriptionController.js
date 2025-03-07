@@ -11,7 +11,7 @@ const createCustomer = async (req, res) => {
         const customer = await stripe.customers.create({
             email,
         });
-
+        await Subscriptions.create({ email: email, stripeCustomerId: customer.id });
         res.status(StatusCodes.OK).send({ customer });
     } catch (error) {
         console.error("Error creating customer:", error);

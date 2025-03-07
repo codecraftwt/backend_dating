@@ -7,7 +7,7 @@ const { ObjectId } = mongoose.Types;
 
 const createRoom = async (req, res) => {
     const { createdBy, createdWith } = req.body;
-
+    
     if (!createdBy || !createdWith) {
         return res.status(StatusCodes.BAD_REQUEST).json({ error: 'Both participants are required' });
     }

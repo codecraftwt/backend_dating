@@ -18,23 +18,13 @@ const userSchema = new mongoose.Schema({
     profilePhoto: { type: String },
     otherPhotos: { type: [String], default: [] },
     likes: { type: Number, default: 0 },
-    biodata: {
+    biodata: { type: String },
+    subscriptionPlan: {
         type: String,
-        required: false,
-        validate: {
-            validator: function(value) {
-                // Regular expression to check if the file is of allowed type (image, pdf, word)
-                const fileExtensionRegex = /\.(jpg|jpeg|png|pdf|doc|docx)$/i;
-                return fileExtensionRegex.test(value);
-            },
-            message: 'Biodata file must be an image (JPG, JPEG, PNG), PDF, or Word file (DOC, DOCX)'
-        }
-    }
+        enum: ['free', 'premium lite', 'premium plus', 'premium extra'],
+        default: 'free',  // default subscription plan is 'free'
+    },
+    subscriptionEndDate: { type: Date },
 }, { timestamps: true });
 
-// userSchema.method({
-//     async authenticate(userPassword: any, password: any) {
-//         return await bcrypt.compare(userPassword, password);
-//     },
-// });
 module.exports = mongoose.model("users", userSchema);
