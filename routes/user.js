@@ -30,10 +30,6 @@ router.get('/', (req, res) => {
     res.send('List of products auth');
 });
 
-router.get('/', (req, res) => {
-    res.send('List of products auth');
-});
-
 router.post('/signup',upload.single('biodata'), createUser);
 router.get('/all', authenticateMiddleware, getAllUsers);
 router.get('/matching-users', authenticateMiddleware, getMatchingUsers);

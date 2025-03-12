@@ -39,6 +39,8 @@ const visitProfile = async (req, res) => {
                 email: visitor.email,
                 age: visitor.age,
                 likes: visitor.likes,
+                isLiked: visitor.isLiked,
+                isFavorited: visitor.isFavorited,
             }
         });
 
@@ -63,7 +65,7 @@ const getVisitors = async (req, res) => {
         const visits = await Visit.find({ visitedId: userId })
             .sort({ visitedAt: -1 })
             .limit(10)
-            .populate('visitorId', 'firstName lastName email age country'); // Populate visitor data for clarity
+            .populate('visitorId', 'firstName lastName email age country isLiked isFavorited'); // Populate visitor data for clarity
         res.status(StatusCodes.OK).json({
             data: visits,
             status: StatusCodes.OK,
@@ -83,7 +85,7 @@ const getVisited = async (req, res) => {
         const visits = await Visit.find({ visitorId: userId })
             .sort({ visitedAt: -1 })
             .limit(10)
-            .populate('visitedId', 'firstName lastName email age country'); // Populate visited profile data
+            .populate('visitedId', 'firstName lastName email age country isLiked isFavorited'); // Populate visited profile data
 
         res.status(StatusCodes.OK).json({
             data: visits,

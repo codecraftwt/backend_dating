@@ -22,9 +22,12 @@ const userSchema = new mongoose.Schema({
     subscriptionPlan: {
         type: String,
         enum: ['free', 'premium lite', 'premium plus', 'premium extra'],
-        default: 'free',  // default subscription plan is 'free'
+        default: 'free',
     },
     subscriptionEndDate: { type: Date },
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    isFavorited: { type: Boolean, default: false },
+    isLiked: { type: Boolean, default: false } 
 }, { timestamps: true });
 
 module.exports = mongoose.model("users", userSchema);

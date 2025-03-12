@@ -2,7 +2,7 @@ const { StatusCodes } = require("http-status-codes");
 const Likes = require('./../models/likes');
 const User = require("../models/user");
 
-const likeProfile = async (req, res) => {
+const likeProfile1 = async (req, res) => {
     const { userId, likedProfileId } = req.body;
 
     if (!userId || !likedProfileId) {
@@ -37,6 +37,50 @@ const likeProfile = async (req, res) => {
 
         res.status(StatusCodes.CREATED).json({ message: 'Profile liked successfully', like });
     } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Error liking profile', error: error.message });
+    }
+};
+
+const likeProfile = async (req, res) => {
+    const { userId, likedProfileId } = req.body;
+
+    if (!userId || !likedProfileId) {
+        return res.status(StatusCodes.BAD_REQUEST).json({ message: 'User ID and Liked Profile ID are required' });
+    }
+
+    try {
+        const existingLike = await Likes.findOne({ userId, likedProfileId });
+
+        if (existingLike) {
+            existingLike.isLike = !existingLike.isLike;
+
+            // Toggle `isLiked` in the user schema
+            await User.findByIdAndUpdate(likedProfileId, {
+                $inc: { likes: existingLike.isLike ? 1 : -1 },
+                isLiked: existingLike.isLike, // Update isLiked field
+            });
+
+            await existingLike.save();
+
+            return res.status(StatusCodes.OK).json({ 
+                message: `Profile ${existingLike.isLike ? 'liked' : 'disliked'} successfully`, 
+                isLiked: existingLike.isLike 
+            });
+        }
+
+        // If no previous like exists, create a new like
+        const newLike = new Likes({ userId, likedProfileId, isLike: true });
+        await newLike.save();
+
+        await User.findByIdAndUpdate(likedProfileId, {
+            $inc: { likes: 1 },
+            isLiked: true, // Set isLiked to true
+        });
+
+        res.status(StatusCodes.CREATED).json({ message: 'Profile liked successfully', isLiked: true });
+
+    } catch (error) {
+        console.error("Error liking profile:", error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Error liking profile', error: error.message });
     }
 };

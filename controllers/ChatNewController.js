@@ -15,6 +15,7 @@ const createRoom = async (req, res) => {
     try {
         const createdByUser = await User.findById(createdBy).select('firstName lastName profilePhoto _id');
         const createdWithUser = await User.findById(createdWith).select('firstName lastName profilePhoto _id');
+
         const existingRoom = await Room.findOne({
             $or: [
                 // { createdBy: createdBy, createdWith: createdWith },
@@ -26,8 +27,18 @@ const createRoom = async (req, res) => {
             .populate({
                 path: 'chat',
                 options: { sort: { 'timestamp': -1 }, limit: 1 }
-            });;
+            });
 
+        if(existingRoom == null){
+        const newRoom = new Room({
+            createdBy: createdByUser,
+            createdWith: createdWithUser,
+        });
+        await newRoom.save();
+        res.status(StatusCodes.CREATED).json({ data: newRoom, status: StatusCodes.CREATED, success: true, message: 'Room created successfully..!!' });
+        }
+
+        if (existingRoom) {
         const roomsWithLatestMessage = [existingRoom].map(room => {
             if (room.chat && room.chat.length > 0) {
                 room.chat.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -44,19 +55,9 @@ const createRoom = async (req, res) => {
                 chat: []
             };
         });
-
-        if (existingRoom) {
             return res.status(StatusCodes.OK).json({ status: StatusCodes.BAD_REQUEST, success: false, message: 'Room with these participants already exists', data: roomsWithLatestMessage });
         }
 
-        const newRoom = new Room({
-            createdBy: createdByUser,
-            createdWith: createdWithUser,
-        });
-        req.io.emit('createroom', newRoom)
-        await newRoom.save();
-
-        res.status(StatusCodes.CREATED).json({ data: newRoom, status: StatusCodes.CREATED, success: true, message: 'Room created successfully..!!' });
     } catch (err) {
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: 'Failed to create room' });
     }
