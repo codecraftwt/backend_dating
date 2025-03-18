@@ -10,6 +10,7 @@ const chatNewRoutes = require('./chatNew');
 const favoriteRoutes = require('./favorite');
 const subscriptionRoutes = require('./subscription');
 const paymentRoutes = require('./payment');
+const userDetailsRoutes = require('./userDetails');
 
 const router = express();
 
@@ -27,5 +28,6 @@ router.use('/chat', chatNewRoutes);
 router.use('/favorite', favoriteRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/userDetails', userDetailsRoutes);
 
 module.exports = router;

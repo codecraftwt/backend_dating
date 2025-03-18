@@ -5,7 +5,7 @@ const userDetailsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
         required: true,
-        unique: true // Ensures one-to-one relationship
+        unique: true
     },
     interestsAndHobbies: { type: [String], default: [] },
     sports: { type: [String], default: [] },
@@ -22,7 +22,9 @@ const userDetailsSchema = new mongoose.Schema({
     wishForChildren: { type: String },
     religion: { type: String },
     profileSummary: { type: String },
-    foodAndDrink: { type: [String], default: [] }
+    foodAndDrink: { type: [String], default: [] },
+    characterAndTraits: { type: [String], default: [] },
+    lifeStyle: { type: [String], default: [] },
 }, { timestamps: true });
 
 module.exports = mongoose.model("userDetails", userDetailsSchema);
