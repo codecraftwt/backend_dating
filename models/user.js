@@ -19,15 +19,18 @@ const userSchema = new mongoose.Schema({
     otherPhotos: { type: [String], default: [] },
     likes: { type: Number, default: 0 },
     biodata: { type: String },
-    subscriptionPlan: {
-        type: String,
-        enum: ['free', 'premium lite', 'premium plus', 'premium extra'],
-        default: 'free',
+    subscription: {
+        plan: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "subscriptionPlan", // Reference to the SubscriptionPlan model
+        },
+        endDate: { type: Date }, // Subscription end date
+        paymentId: { type: String }, // Payment ID from Stripe or other payment gateway
+        status: { type: String, enum: ["active", "inactive", "canceled"], default: "inactive" },
     },
-    subscriptionEndDate: { type: Date },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isFavorited: { type: Boolean, default: false },
-    isLiked: { type: Boolean, default: false } 
+    isLiked: { type: Boolean, default: false }
 }, { timestamps: true });
 
 module.exports = mongoose.model("users", userSchema);

@@ -5,7 +5,7 @@ const dotenv = require('dotenv')
 const express = require('express')
 const http = require('http');
 const cors = require('cors');
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const socketIO = require('socket.io');
 
 const app = express();

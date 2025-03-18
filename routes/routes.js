@@ -8,6 +8,8 @@ const uploadRoutes = require('./upload');
 const chatRoutes = require('./chat');
 const chatNewRoutes = require('./chatNew');
 const favoriteRoutes = require('./favorite');
+const subscriptionRoutes = require('./subscription');
+const paymentRoutes = require('./payment');
 
 const router = express();
 
@@ -23,5 +25,7 @@ router.use('/uploads', uploadRoutes);
 router.use('/messages', chatRoutes);
 router.use('/chat', chatNewRoutes);
 router.use('/favorite', favoriteRoutes);
+router.use('/subscription', subscriptionRoutes);
+router.use('/payments', paymentRoutes);
 
 module.exports = router;
