@@ -106,7 +106,6 @@ const sendMessage = async (req, res) => {
 
 const getAllRooms = async (req, res) => {
     const { userId } = req.params;
-    console.log(userId, 'userId')
     try {
         // const rooms = await Room.find({}, '-chat');
 
