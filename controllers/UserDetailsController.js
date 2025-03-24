@@ -20,8 +20,8 @@ const getUserDetails = async (req, res) => {
 
 const createUserDetails = async (req, res) => {
     try{
-        // Extract user ID from authenticated request
-        const userId = req.user.id; // From the token
+        // Extract user ID from body
+        const userId = req.body.userId;
 
        // Check if user details already exist
        const existingDetails = await userDetails.findOne({ userId });
@@ -38,7 +38,7 @@ const createUserDetails = async (req, res) => {
         });
         await newDetails.save();
 
-        res.status(StatusCodes.CREATED).json({ message: 'User details created successfully', newDetails });
+        res.status(StatusCodes.CREATED).json({ message: 'User details created successfully', newDetails, status: StatusCodes.OK, success: true });
 
     }catch(error){
         console.error('Error creating user details:', error);
@@ -48,16 +48,15 @@ const createUserDetails = async (req, res) => {
 
 const updateUserDetails = async (req, res) => {
     try {
-        const userId = req.params.id;
+        const userId = req.params.userId;
         const updatedData = req.body;
-
         const user = await userDetails.findByIdAndUpdate(userId, updatedData, { new: true, runValidators: true }).select('-password');
 
         if (!user) {
             return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
         }    
 
-        res.status(StatusCodes.OK).json({ message: 'User details updated successfully', user });
+        res.status(StatusCodes.OK).json({ message: 'User details updated successfully', user, status: StatusCodes.OK, success: true });
     } catch (error) {
         console.error('Error updating user details:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error', error: error.message || 'Unknown error' });

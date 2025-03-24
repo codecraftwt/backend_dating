@@ -45,7 +45,8 @@ const signin = async (req, res) => {
         await user.save();
         // await sendMail1(email);
         const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '1h' });
-        res.status(StatusCodes.CREATED).json({ message: 'User created successfully', status: StatusCodes.CREATED, success: true, token });
+        const userId = user._id.toString();
+        res.status(StatusCodes.CREATED).json({ message: 'User created successfully', status: StatusCodes.CREATED, success: true, token, userId });
     } catch (error) {
         console.error('Error in signup route:', error);
         res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error', error: error.message || 'Unknown error' });

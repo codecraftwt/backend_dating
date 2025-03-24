@@ -9,7 +9,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:userId', authenticateMiddleware, getUserDetails);
-router.post('/create', authenticateMiddleware, createUserDetails);
+router.post('/create', createUserDetails);
 router.put('/:userId', authenticateMiddleware, updateUserDetails);
 
 module.exports = router;
