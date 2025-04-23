@@ -18,15 +18,21 @@ const twilioClient = new twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 const signin = async (req, res) => {
     try {
-        const { profileFor, gender, firstName, lastName, dob, religion, motherTongue, country, email, mobile, password } = req.body;
+        const { profileFor, gender, firstName, lastName, dob, religion, motherTongue, country, email, mobile, password, height, weight, education, maritalStatus, searchingFor, ethnicity, childrens, wishForChildren} = req.body;
+        const biodata = req.file ? req.file.path : null; // Get the file path from multer
 
         const requiredFields = [
-            profileFor, gender, firstName, lastName, dob, religion,
-            motherTongue, country, email, mobile, password
+            'profileFor', 'gender', 'firstName', 'lastName', 'dob', 'religion',
+            'motherTongue', 'country', 'email', 'mobile', 'password', 'height',
+            'weight', 'education', 'maritalStatus', 'searchingFor', 'ethnicity',
+            'childrens', 'wishForChildren'
         ];
-
-        if (requiredFields.some(field => !field)) {
-            return res.status(StatusCodes.BAD_REQUEST).json({ message: 'All fields are required' });
+        const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].trim() === '');
+        if (missingFields.length > 0) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                message: 'All fields are required',
+                missingFields: missingFields
+            });
         }
 
         const existingUser = await User.findOne({ email });
@@ -37,10 +43,10 @@ const signin = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const age = await calculateAge(dob)
         const user = new User({
-            profileFor, gender, firstName, lastName, dob, religion,
-            motherTongue, country, email, mobile, password: hashedPassword,
-            age: age
-        });
+                    profileFor, gender, firstName, lastName, dob, religion,
+                    motherTongue, country, email, mobile, password: hashedPassword,
+                    age: age, biodata, height, weight, education, maritalStatus, searchingFor, ethnicity, childrens, wishForChildren
+                });
 
         await user.save();
         // await sendMail1(email);

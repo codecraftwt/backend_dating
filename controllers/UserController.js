@@ -47,12 +47,12 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // };
 const createUser = async (req, res) => {
     try {
-        const { profileFor, gender, firstName, lastName, dob, religion, motherTongue, country, email, mobile, password, height, weight, education, maritalStatus, searchingFor, subscription } = req.body;
+        const { profileFor, gender, firstName, lastName, dob, religion, motherTongue, country, email, mobile, password, height, weight, education, maritalStatus, searchingFor, subscription, ethnicity, childrens, wishForChildren} = req.body;
         const biodata = req.file ? req.file.path : null; // Get the file path from multer
 
         const requiredFields = [
             profileFor, gender, firstName, lastName, dob, religion,
-            motherTongue, country, email, mobile, password, height, weight, education, maritalStatus, searchingFor, subscription
+            motherTongue, country, email, mobile, password, height, weight, education, maritalStatus, searchingFor, subscription, ethnicity, childrens, wishForChildren
         ];
 
         if (requiredFields.some(field => !field)) {
@@ -69,9 +69,8 @@ const createUser = async (req, res) => {
         const user = new User({
             profileFor, gender, firstName, lastName, dob, religion,
             motherTongue, country, email, mobile, password: hashedPassword,
-            age: age, biodata, height, weight, education, maritalStatus, searchingFor, subscription
+            age: age, biodata, height, weight, education, maritalStatus, searchingFor, subscription, ethnicity, childrens, wishForChildren
         });
-
         await user.save();
         const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '1h' });
         res.status(StatusCodes.CREATED).json({ message: 'User created successfully', token });
@@ -251,13 +250,12 @@ const getAllUserswithProfileMaching = async (req, res) => {
       // Get other users with matching preferences
       const users = await User.find({
         _id: { $ne: loggedInUserId },
-        gender: loggedInUser.searchingFor,       // Target gender
-        searchingFor: loggedInUser.gender         // Should be searching for logged-in user's gender
+        gender: loggedInUser.searchingFor,       
+        searchingFor: loggedInUser.gender         
       })
         .select('-password')
         .lean();
 
-      // Rest of your existing code remains unchanged
       if (users.length === 0) {
         return res.status(StatusCodes.NOT_FOUND).json({
           message: 'No users found',
