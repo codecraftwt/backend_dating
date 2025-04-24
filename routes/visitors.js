@@ -8,8 +8,8 @@ router.get('/', (req, res) => {
     res.send('List of products auth');
 });
 
-router.post('/visit', authenticateMiddleware, visitProfile);
-router.get('/:userId', authenticateMiddleware, getVisitors);
+router.post('/post-visit', authenticateMiddleware, visitProfile);
+router.get('/visitors/:userId', authenticateMiddleware, getVisitors);
 router.get('/visited/:userId', authenticateMiddleware, getVisited);
 
 module.exports = router;

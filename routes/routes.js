@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 
 router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
-router.use('/visitors', visitorsRoutes);
+router.use('/visits', visitorsRoutes);
 router.use('/likes', likesRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/messages', chatRoutes);

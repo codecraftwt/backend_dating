@@ -1,33 +1,79 @@
 const { StatusCodes } = require("http-status-codes");
 const Visit = require('./../models/visitors');
 const User = require("../models/user");
-const likes = require("../models/likes");
 
-// API to log a visit to a profile
+/**
+ * Records a visit when a user views another user's profile
+ * @route POST /api/visits/post-visit
+ * @access Private
+ */
 const visitProfile = async (req, res) => {
-    const { visitorId, visitedId } = req.body;
-
-    if (!visitorId || !visitedId) {
-        return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Visitor ID and Visited ID are required' });
-    }
-
     try {
-        // Check if a visit already exists for the same visitor and visited user
+        const { visitorId, visitedId } = req.body;
+        
+        // Validate required fields
+        if (!visitorId || !visitedId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ 
+                success: false,
+                message: 'Visitor ID and Visited ID are required' 
+            });
+        }
+
+        // Prevent users from recording visits to their own profile
+        if (visitorId === visitedId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ 
+                success: false,
+                message: 'Cannot visit your own profile' 
+            });
+        }
+
+        // Check if both users exist
+        const [visitor, visited] = await Promise.all([
+            User.findById(visitorId),
+            User.findById(visitedId)
+        ]);
+
+        if (!visitor) {
+            return res.status(StatusCodes.NOT_FOUND).json({ 
+                success: false,
+                message: 'Visitor not found' 
+            });
+        }
+
+        if (!visited) {
+            return res.status(StatusCodes.NOT_FOUND).json({ 
+                success: false,
+                message: 'Visited user not found' 
+            });
+        }
+
+        // Check if a visit already exists
         const existingVisit = await Visit.findOne({ visitorId, visitedId });
 
         if (existingVisit) {
+            // Update the timestamp to show it was visited again
+            existingVisit.visitedAt = new Date();
+            existingVisit.updatedAt = new Date();
+            await existingVisit.save();
+            
             return res.status(StatusCodes.OK).json({
-                message: 'Visit already created for this user.',
+                success: true,
+                message: 'Visit updated successfully',
                 visit: existingVisit 
             });
         }
 
-        const visitor = await User.findById(visitedId); //=================================================
+        // Check if users have liked each other
+        // const likeStatus = await likes.findOne({
+        //     $or: [
+        //         { likerId: visitorId, likedId: visitedId },
+        //         { likerId: visitedId, likedId: visitorId }
+        //     ]
+        // });
 
-        if (!visitor) {
-            return res.status(StatusCodes.NOT_FOUND).json({ message: 'Visitor not found' });
-        }
+        // const isLiked = !!likeStatus;
 
+        // Create new visit record
         const visit = new Visit({
             visitorId,
             visitedId,
@@ -38,64 +84,159 @@ const visitProfile = async (req, res) => {
                 country: visitor.country,
                 email: visitor.email,
                 age: visitor.age,
-                likes: visitor.likes,
+                likes: visitor.likes || 0,
                 isLiked: visitor.isLiked,
-                isFavorited: visitor.isFavorited,
+                isFavorited: visitor.isFavorited || false,
+            },
+            visited: {
+                firstName: visited.firstName,
+                lastName: visited.lastName,
+                dob: visited.dob,
+                country: visited.country,
+                email: visited.email,
+                age: visited.age,
+                likes: visited.likes || 0,
+                isLiked: visited.isLiked,
+                isFavorited: visited.isFavorited || false,
             }
         });
 
         await visit.save();
-        res.status(StatusCodes.CREATED).json({ message: 'Visit created successfully', visit });
+        
+        res.status(StatusCodes.CREATED).json({ 
+            success: true,
+            message: 'Visit created successfully', 
+            visit 
+        });
     } catch (error) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Error creating visit', error });
+        console.error('Error creating visit:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+            success: false,
+            message: 'Error creating visit', 
+            error: error.message 
+        });
     }
 };
 
-// API to get recent visitors of a user (visits made to their profile)
+/**
+ * Gets the list of users who visited a specific user's profile
+ * @route GET /api/visits/visitors/:userId
+ * @access Private
+ */
 const getVisitors = async (req, res) => {
-    const { userId } = req.params;
-    
-    if (!userId) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-            message: 'User ID is required',
-            success: false
-        });
-    }
     try {
+        const { userId } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
+        // Validate required fields
+        if (!userId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
+
+        // Check if user exists
+        const userExists = await User.exists({ _id: userId });
+        if (!userExists) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Get total count for pagination
+        const totalVisits = await Visit.countDocuments({ visitedId: userId });
+        
+        // Find visits where the current user is the visited person
         const visits = await Visit.find({ visitedId: userId })
             .sort({ visitedAt: -1 })
-            .limit(10)
-            .populate('visitorId', 'firstName lastName email age country isLiked isFavorited'); // Populate visitor data for clarity
+            .skip(skip)
+            .limit(limit);
+            
+        // Return with pagination metadata
         res.status(StatusCodes.OK).json({
-            data: visits,
-            status: StatusCodes.OK,
             success: true,
-            message: 'Visitors fetched successfully!!'
+            message: 'Visitors fetched successfully',
+            data: visits,
+            pagination: {
+                total: totalVisits,
+                page,
+                limit,
+                pages: Math.ceil(totalVisits / limit)
+            }
         });
     } catch (error) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Error fetching visitors', error });
+        console.error('Error fetching visitors:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+            success: false,
+            message: 'Error fetching visitors', 
+            error: error.message
+        });
     }
 };
 
-// API to get recent profiles visited by a user
+/**
+ * Gets the list of profiles that a specific user has visited
+ * @route GET /api/visits/visited/:userId
+ * @access Private
+ */
 const getVisited = async (req, res) => {
-    const { userId } = req.params;
-
     try {
+        const { userId } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // Validate required fields
+        if (!userId) {
+            return res.status(StatusCodes.BAD_REQUEST).json({
+                success: false,
+                message: 'User ID is required'
+            });
+        }
+
+        // Check if user exists
+        const userExists = await User.exists({ _id: userId });
+        if (!userExists) {
+            return res.status(StatusCodes.NOT_FOUND).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Get total count for pagination
+        const totalVisits = await Visit.countDocuments({ visitorId: userId });
+        
+        // Find visits where the current user is the visitor
         const visits = await Visit.find({ visitorId: userId })
             .sort({ visitedAt: -1 })
-            .limit(10)
-            .populate('visitedId', 'firstName lastName email age country isLiked isFavorited'); // Populate visited profile data
-
+            .skip(skip)
+            .limit(limit);
+            
+        // Return with pagination metadata
         res.status(StatusCodes.OK).json({
-            data: visits,
-            status: StatusCodes.OK,
             success: true,
-            message: 'Visited profiles fetched successfully!!'
+            message: 'Visited profiles fetched successfully',
+            data: visits,
+            pagination: {
+                total: totalVisits,
+                page,
+                limit,
+                pages: Math.ceil(totalVisits / limit)
+            }
         });
     } catch (error) {
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Error fetching visited profiles', error });
+        console.error('Error fetching visited profiles:', error);
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+            success: false,
+            message: 'Error fetching visited profiles', 
+            error: error.message
+        });
     }
 };
+
 
 module.exports = { visitProfile, getVisitors, getVisited };
