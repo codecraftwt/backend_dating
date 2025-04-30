@@ -63,16 +63,6 @@ const visitProfile = async (req, res) => {
             });
         }
 
-        // Check if users have liked each other
-        // const likeStatus = await likes.findOne({
-        //     $or: [
-        //         { likerId: visitorId, likedId: visitedId },
-        //         { likerId: visitedId, likedId: visitorId }
-        //     ]
-        // });
-
-        // const isLiked = !!likeStatus;
-
         // Create new visit record
         const visit = new Visit({
             visitorId,
@@ -162,10 +152,10 @@ const getVisitors = async (req, res) => {
             message: 'Visitors fetched successfully',
             data: visits,
             pagination: {
-                total: totalVisits,
-                page,
-                limit,
-                pages: Math.ceil(totalVisits / limit)
+                count: totalVisits,
+                pages: Math.ceil(totalVisits / limit),
+                currentPage: page,
+                itemsPerPage: limit,
             }
         });
     } catch (error) {
@@ -222,10 +212,10 @@ const getVisited = async (req, res) => {
             message: 'Visited profiles fetched successfully',
             data: visits,
             pagination: {
-                total: totalVisits,
-                page,
-                limit,
-                pages: Math.ceil(totalVisits / limit)
+                count: totalVisits,
+                pages: Math.ceil(totalVisits / limit),
+                currentPage: page,
+                itemsPerPage: limit,
             }
         });
     } catch (error) {

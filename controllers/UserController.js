@@ -129,23 +129,82 @@ const getMatchingUsers = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-    try {
-        const userId = req.params.id;
-        const { profileFor, gender, firstName, lastName, dob, religion, motherTongue, country, email, mobile, profilePhoto, otherPhotos } = req.body;
+  try {
+    const userId = req.params.id;
+    const updates = req.body;
 
-        const updatedData = { profileFor, gender, firstName, lastName, dob, religion, motherTongue, country, email, mobile, profilePhoto, otherPhotos };
-        
-        const user = await User.findByIdAndUpdate(userId, updatedData, { new: true, runValidators: true }).select('-password');
-
-        if (!user) {
-            return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
-        }
-
-        res.status(StatusCodes.OK).json({ message: 'User updated successfully', user });
-    } catch (error) {
-        console.error('Error updating user profile:', error);
-        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: 'Server error', error: error.message || 'Unknown error' });
+    // Validate user ID
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ 
+        message: 'Invalid user ID' 
+      });
     }
+
+    // Allowed fields for update
+    const allowedUpdates = {
+      profileFor: true,
+      gender: true,
+      firstName: true,
+      lastName: true,
+      dob: true,
+      religion: true,
+      motherTongue: true,
+      country: true,
+      email: true,
+      mobile: true,
+      profilePhoto: true,
+      otherPhotos: true
+    };
+
+    // Filter valid updates
+    const validUpdates = Object.keys(updates).reduce((acc, key) => {
+      if (allowedUpdates[key]) {
+        acc[key] = updates[key];
+      }
+      return acc;
+    }, {});
+
+    // Add update timestamp
+    validUpdates.updatedAt = new Date();
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: validUpdates },
+      { 
+        new: true,
+        runValidators: true,
+        projection: { password: 0 } 
+      }
+    );
+
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({ 
+        message: 'User not found' 
+      });
+    }
+
+    res.status(StatusCodes.OK).json({ 
+      message: 'User updated successfully', 
+      user,
+      success: true,
+      status: StatusCodes.OK
+    });
+
+  } catch (error) {
+    console.error('Update error:', error);
+    
+    if (error.name === 'ValidationError') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: 'Validation failed',
+        errors: error.errors
+      });
+    }
+    
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
 };
 
 const deleteUser = async (req, res) => {
@@ -228,126 +287,148 @@ const getUsersByPreference = async (req, res) => {
 
 const getAllUserswithProfileMaching = async (req, res) => {
   try {
-      const loggedInUserId = req.user.id;
-  
-      // Validate ObjectID format
-      if (!mongoose.Types.ObjectId.isValid(loggedInUserId)) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "Invalid user ID format",
-          success: false
-        });
-      }
+    const loggedInUserId = req.user.id;
 
-      // Get logged-in user's preferences
-      const loggedInUser = await User.findById(loggedInUserId);
-      if (!loggedInUser) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          message: 'Logged-in user not found',
-          success: false
-        });
-      }
+    // Validate ObjectID format
+    if (!mongoose.Types.ObjectId.isValid(loggedInUserId)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Invalid user ID format",
+        success: false
+      });
+    }
 
-      // Get other users with matching preferences
-      const users = await User.find({
-        _id: { $ne: loggedInUserId },
-        gender: loggedInUser.searchingFor,       
-        searchingFor: loggedInUser.gender         
-      })
-        .select('-password')
-        .lean();
+    // Get logged-in user's preferences
+    const loggedInUser = await User.findById(loggedInUserId);
+    if (!loggedInUser) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: 'Logged-in user not found',
+        success: false
+      });
+    }
 
-      if (users.length === 0) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          message: 'No users found',
-          success: false
-        });
-      }
+    // Pagination parameters
+    let page = parseInt(req.query.page, 10);
+    let limit = parseInt(req.query.limit, 10);
+    
+    // Validate and sanitize pagination parameters
+    page = isNaN(page) || page < 1 ? 1 : page;
+    limit = isNaN(limit) || limit < 1 ? 10 : Math.min(limit, 100);
 
-      // Get match configuration
-      const matchWeights = {
-        religion: 0.15,
-        maritalStatus: 0.1,
-        languages: 0.1,
-        interestsAndHobbies: 0.1,
-        sports: 0.05,
-        bodyType: 0.05,
-        ethnicity: 0.05,
-        education: 0.05,
-        smokingHabits: 0.05,
-        alcoholFrequency: 0.05,
-        wishForChildren: 0.05,
-        foodAndDrink: 0.05,
-        characterAndTraits: 0.05,
-        lifeStyle: 0.05
-      };
-  
-      // Get user details in single query
-      const [loggedInDetails, otherDetails] = await Promise.all([
-        UserDetails.findOne({ userId: loggedInUserId }).lean(),
-        UserDetails.find({ 
-          userId: { $in: users.map(u => u._id) }
-        }).lean()
-      ]);
-  
-      const detailsMap = new Map(
-        otherDetails.map(d => [d.userId.toString(), d])
-      );
-  
-      // Calculate matches
-      const usersWithMatches = users.map(user => {
-        const userDetails = detailsMap.get(user._id.toString()) || {};
-        let matchPercentage = 0;
-  
-        if (loggedInDetails) {
-          let totalScore = 0;
-          let totalPossible = 0;
-  
-          for (const [field, weight] of Object.entries(matchWeights)) {
-            const baseVal = loggedInDetails[field];
-            const targetVal = userDetails[field];
-  
-            if (!baseVal || !targetVal) continue;
-  
-            totalPossible += weight;
-  
-            if (Array.isArray(baseVal)) {
-              const common = baseVal.filter(v => 
-                targetVal.includes(v)
-              ).length;
-              const unique = new Set([...baseVal, ...targetVal]).size;
-              totalScore += unique > 0 
-                ? (common / unique) * weight 
-                : 0;
-            } else if (baseVal === targetVal) {
-              totalScore += weight;
-            }
+    // Base query for matching users
+    const query = {
+      _id: { $ne: loggedInUserId },
+      gender: loggedInUser.searchingFor,
+      searchingFor: loggedInUser.gender,
+      isDelete: 1
+    };
+
+    // Get all matching users (without pagination)
+    const allUsers = await User.find(query)
+      .select('-password')
+      .lean();
+
+    if (allUsers.length === 0) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: 'No users found',
+        success: false
+      });
+    }
+
+    // Get user details in single query
+    const [loggedInDetails, otherDetails] = await Promise.all([
+      UserDetails.findOne({ userId: loggedInUserId }).lean(),
+      UserDetails.find({ 
+        userId: { $in: allUsers.map(u => u._id) }
+      }).lean()
+    ]);
+
+    const detailsMap = new Map(
+      otherDetails.map(d => [d.userId.toString(), d])
+    );
+
+    // Match configuration
+    const matchWeights = {
+      religion: 0.15,
+      maritalStatus: 0.1,
+      languages: 0.1,
+      interestsAndHobbies: 0.1,
+      sports: 0.05,
+      bodyType: 0.05,
+      ethnicity: 0.05,
+      education: 0.05,
+      smokingHabits: 0.05,
+      alcoholFrequency: 0.05,
+      wishForChildren: 0.05,
+      foodAndDrink: 0.05,
+      characterAndTraits: 0.05,
+      lifeStyle: 0.05
+    };
+
+    // Calculate matches for all users
+    const usersWithMatches = allUsers.map(user => {
+      const userDetails = detailsMap.get(user._id.toString()) || {};
+      let matchPercentage = 0;
+
+      if (loggedInDetails) {
+        let totalScore = 0;
+        let totalPossible = 0;
+
+        for (const [field, weight] of Object.entries(matchWeights)) {
+          const baseVal = loggedInDetails[field];
+          const targetVal = userDetails[field];
+
+          if (!baseVal || !targetVal) continue;
+
+          totalPossible += weight;
+
+          if (Array.isArray(baseVal)) {
+            const common = baseVal.filter(v => 
+              targetVal.includes(v)
+            ).length;
+            const unique = new Set([...baseVal, ...targetVal]).size;
+            totalScore += unique > 0 
+              ? (common / unique) * weight 
+              : 0;
+          } else if (baseVal === targetVal) {
+            totalScore += weight;
           }
-  
-          matchPercentage = totalPossible > 0 
-            ? Math.round((totalScore / totalPossible) * 100)
-            : 0;
         }
-  
-        return {
-          ...user,
-          profileMatch: matchPercentage
-        };
-      });
-  
-      // Sort by match percentage
-      usersWithMatches.sort((a, b) => b.profileMatch - a.profileMatch);
-  
-      res.status(StatusCodes.OK).json({
-        data: usersWithMatches,
-        success: true,
-        status: StatusCodes.OK,
-        message: 'Users with match percentages fetched successfully'
-      });
-      
+
+        matchPercentage = totalPossible > 0 
+          ? Math.round((totalScore / totalPossible) * 100)
+          : 0;
+      }
+
+      return {
+        ...user,
+        profileMatch: matchPercentage
+      };
+    });
+
+    // Sort by match percentage (descending)
+    usersWithMatches.sort((a, b) => b.profileMatch - a.profileMatch);
+
+    // Apply pagination after sorting
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedUsers = usersWithMatches.slice(startIndex, endIndex);
+
+    res.status(StatusCodes.OK).json({
+      data: paginatedUsers,
+      pagination: {
+        count: usersWithMatches.length,
+        pages: Math.ceil(usersWithMatches.length / limit),
+        currentPage: page,
+        itemsPerPage: limit
+      },
+      success: true,
+      status: StatusCodes.OK,
+      message: 'Users with match percentages fetched successfully'
+    });
+
   } catch (error) {
     console.error('Error in getAllUsers:', error);
     
-    // Handle CastError specifically
     if (error.name === 'CastError') {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Invalid ID format",

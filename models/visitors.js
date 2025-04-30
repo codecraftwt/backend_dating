@@ -19,7 +19,6 @@ const visitSchema = new mongoose.Schema({
     email: String,
     age: Number,
     likes: Number,
-    // isLiked: Boolean,
     isFavorited: Boolean
   },
   visited: {
@@ -30,7 +29,6 @@ const visitSchema = new mongoose.Schema({
     email: String,
     age: Number,
     likes: Number,
-    // isLiked: Boolean,
     isFavorited: Boolean
   },
   visitedAt: {
