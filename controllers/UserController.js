@@ -446,4 +446,4 @@ const getAllUsersWithProfileMatching = async (req, res) => {
   }
 };
 
-module.exports = { createUser, getUserProfile, getAllUsers, updateUserProfile, deleteUser, getMatchingUsers, getUsersByPreference, getAllUserswithProfileMaching }
+module.exports = { createUser, getUserProfile, getAllUsers, updateUserProfile, deleteUser, getMatchingUsers, getUsersByPreference, getAllUsersWithProfileMatching }
