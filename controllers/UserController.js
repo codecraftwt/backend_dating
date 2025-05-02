@@ -285,7 +285,7 @@ const getUsersByPreference = async (req, res) => {
   }
 };
 
-const getAllUserswithProfileMaching = async (req, res) => {
+const getAllUsersWithProfileMatching = async (req, res) => {
   try {
     const loggedInUserId = req.user.id;
 

@@ -2,7 +2,7 @@
 const express = require('express');
 const multer = require('multer');
 const authenticateMiddleware = require('../middlewares/Authenticcate');
-const { createUser, getUserProfile, updateUserProfile, deleteUser, getAllUsers, getMatchingUsers, getAllUserswithProfileMaching, getUsersByPreference } = require('../controllers/UserController');
+const { createUser, getUserProfile, updateUserProfile, deleteUser, getAllUsers, getMatchingUsers, getAllUsersWithProfileMatching, getUsersByPreference } = require('../controllers/UserController');
 const router = express.Router();
 
 // Set up multer storage configuration
@@ -32,7 +32,7 @@ router.get('/', (req, res) => {
 
 router.post('/signup',upload.single('biodata'), createUser);
 router.get('/all', authenticateMiddleware, getAllUsers);
-router.get('/all-with-profile-matching', authenticateMiddleware, getAllUserswithProfileMaching);
+router.get('/all-with-profile-matching', authenticateMiddleware, getAllUsersWithProfileMatching);
 router.get('/all-by-searchingfor', authenticateMiddleware, getUsersByPreference);
 router.get('/matching-users', authenticateMiddleware, getMatchingUsers);
 router.get('/:id', authenticateMiddleware, getUserProfile);

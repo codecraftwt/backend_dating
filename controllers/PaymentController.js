@@ -10,7 +10,6 @@ const SubscriptionPlan = require("../models/subscriptionPlan");
  */
 const createCheckoutSession = async (req, res) => {
   const { amount, currency, userId, planId } = req.body;
-  console.log(req.body,'req.body');
   try {
     // Create a Checkout Session
     const session = await stripe.checkout.sessions.create({
