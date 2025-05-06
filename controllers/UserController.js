@@ -288,160 +288,133 @@ const getUsersByPreference = async (req, res) => {
 const getAllUsersWithProfileMatching = async (req, res) => {
   try {
     const loggedInUserId = req.user.id;
-
-    // Validate ObjectID format
     if (!mongoose.Types.ObjectId.isValid(loggedInUserId)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Invalid user ID format",
-        success: false
-      });
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: "Invalid user ID format", success: false });
     }
 
-    // Get logged-in user's preferences
-    const loggedInUser = await User.findById(loggedInUserId);
+    const [loggedInUser, loggedDetail] = await Promise.all([
+      User.findById(loggedInUserId).lean(),
+      UserDetails.findOne({ userId: loggedInUserId }).lean()
+    ]);
+
     if (!loggedInUser) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        message: 'Logged-in user not found',
-        success: false
-      });
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Logged-in user not found', success: false });
     }
 
-    // Pagination parameters
-    let page = parseInt(req.query.page, 10);
-    let limit = parseInt(req.query.limit, 10);
-    
-    // Validate and sanitize pagination parameters
-    page = isNaN(page) || page < 1 ? 1 : page;
-    limit = isNaN(limit) || limit < 1 ? 10 : Math.min(limit, 100);
+    const {
+      page: pageRaw, limit: limitRaw,
+      minAge: minAgeRaw, maxAge: maxAgeRaw,
+      minHeight: minHeightRaw, maxHeight: maxHeightRaw,
+      childrens, wishForChildren, smoking: smokingFilter,
+      religion, education
+    } = req.query;
 
-    // Base query for matching users
-    const query = {
+    const page = Math.max(parseInt(pageRaw, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(limitRaw, 10) || 10, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const toNumber = (val, parser) => {
+      const num = parser(val);
+      return (isNaN(num) || num <= 0) ? undefined : num;
+    };
+    const minAge = toNumber(minAgeRaw, parseInt);
+    const maxAge = toNumber(maxAgeRaw, parseInt);
+    const minHeight = toNumber(minHeightRaw, parseFloat);
+    const maxHeight = toNumber(maxHeightRaw, parseFloat);
+
+    // Build user query
+    const userQuery = {
       _id: { $ne: loggedInUserId },
       gender: loggedInUser.searchingFor,
       searchingFor: loggedInUser.gender,
       isDelete: 1
     };
 
-    // Get all matching users (without pagination)
-    const allUsers = await User.find(query)
+    if (minAge !== undefined || maxAge !== undefined) {
+      userQuery.age = {};
+      if (minAge !== undefined) userQuery.age.$gte = minAge;
+      if (maxAge !== undefined) userQuery.age.$lte = maxAge;
+    }
+    if (minHeight !== undefined || maxHeight !== undefined) {
+      userQuery.height = {};
+      if (minHeight !== undefined) userQuery.height.$gte = minHeight;
+      if (maxHeight !== undefined) userQuery.height.$lte = maxHeight;
+    }
+    if (childrens) userQuery.childrens = childrens;
+    if (wishForChildren) userQuery.wishForChildren = wishForChildren;
+    if (religion) userQuery.religion = religion;
+    if (education) userQuery.education = education;
+
+    const users = await User.find(userQuery)
       .select('-password')
+      .skip(skip)
+      .limit(limit)
       .lean();
 
-    if (allUsers.length === 0) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        message: 'No users found',
-        success: false
-      });
-    }
+    const userIds = users.map(u => u._id);
+    const detailsList = await UserDetails.find({ userId: { $in: userIds } }).lean();
+    const detailsMap = new Map(detailsList.map(d => [d.userId.toString(), d]));
 
-    // Get user details in single query
-    const [loggedInDetails, otherDetails] = await Promise.all([
-      UserDetails.findOne({ userId: loggedInUserId }).lean(),
-      UserDetails.find({ 
-        userId: { $in: allUsers.map(u => u._id) }
-      }).lean()
-    ]);
-
-    const detailsMap = new Map(
-      otherDetails.map(d => [d.userId.toString(), d])
-    );
-
-    // Match configuration
-    const matchWeights = {
-      religion: 0.15,
-      maritalStatus: 0.1,
-      languages: 0.1,
-      interestsAndHobbies: 0.1,
-      sports: 0.05,
-      bodyType: 0.05,
-      ethnicity: 0.05,
-      education: 0.05,
-      smokingHabits: 0.05,
-      alcoholFrequency: 0.05,
-      wishForChildren: 0.05,
-      foodAndDrink: 0.05,
-      characterAndTraits: 0.05,
-      lifeStyle: 0.05
+    const weights = {
+      religion: 0.15, maritalStatus: 0.1, languages: 0.1, interestsAndHobbies: 0.1,
+      sports: 0.05, bodyType: 0.05, ethnicity: 0.05, education: 0.05, smokingHabits: 0.05,
+      alcoholFrequency: 0.05, wishForChildren: 0.05, foodAndDrink: 0.05,
+      characterAndTraits: 0.05, lifeStyle: 0.05
     };
 
-    // Calculate matches for all users
-    const usersWithMatches = allUsers.map(user => {
-      const userDetails = detailsMap.get(user._id.toString()) || {};
-      let matchPercentage = 0;
+    const scored = users
+      .map(user => {
+        const detail = detailsMap.get(user._id.toString());
+        if (!detail) return null;
 
-      if (loggedInDetails) {
-        let totalScore = 0;
-        let totalPossible = 0;
+        if (smokingFilter && detail.smokingHabits !== smokingFilter) {
+          return null; // Early filter out
+        }
 
-        for (const [field, weight] of Object.entries(matchWeights)) {
-          const baseVal = loggedInDetails[field];
-          const targetVal = userDetails[field];
+        let score = 0, total = 0;
+        for (const [field, w] of Object.entries(weights)) {
+          const a = loggedDetail?.[field];
+          const b = detail?.[field];
+          if (!a || !b) continue;
+          total += w;
 
-          if (!baseVal || !targetVal) continue;
-
-          totalPossible += weight;
-
-          if (Array.isArray(baseVal)) {
-            const common = baseVal.filter(v => 
-              targetVal.includes(v)
-            ).length;
-            const unique = new Set([...baseVal, ...targetVal]).size;
-            totalScore += unique > 0 
-              ? (common / unique) * weight 
-              : 0;
-          } else if (baseVal === targetVal) {
-            totalScore += weight;
+          if (Array.isArray(a) && Array.isArray(b)) {
+            const common = a.filter(x => b.includes(x)).length;
+            const union = new Set([...a, ...b]).size;
+            score += union ? (common / union) * w : 0;
+          } else if (a === b) {
+            score += w;
           }
         }
 
-        matchPercentage = totalPossible > 0 
-          ? Math.round((totalScore / totalPossible) * 100)
-          : 0;
-      }
+        return {
+          ...user,
+          profileMatch: total ? Math.round((score / total) * 100) : 0
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.profileMatch - a.profileMatch);
 
-      return {
-        ...user,
-        profileMatch: matchPercentage
-      };
-    });
+    const totalCount = await User.countDocuments(userQuery);
 
-    // Sort by match percentage (descending)
-    usersWithMatches.sort((a, b) => b.profileMatch - a.profileMatch);
-
-    // Apply pagination after sorting
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedUsers = usersWithMatches.slice(startIndex, endIndex);
-
-    res.status(StatusCodes.OK).json({
-      data: paginatedUsers,
+    return res.status(StatusCodes.OK).json({
+      data: scored,
       pagination: {
-        count: usersWithMatches.length,
-        pages: Math.ceil(usersWithMatches.length / limit),
+        count: totalCount,
+        pages: Math.ceil(totalCount / limit),
         currentPage: page,
         itemsPerPage: limit
       },
       success: true,
-      status: StatusCodes.OK,
-      message: 'Users with match percentages fetched successfully'
+      message: 'Users fetched successfully'
     });
 
-  } catch (error) {
-    console.error('Error in getAllUsers:', error);
-    
-    if (error.name === 'CastError') {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Invalid ID format",
-        success: false,
-        status: StatusCodes.BAD_REQUEST
-      });
-    }
-
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+  } catch (err) {
+    console.error(err);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       message: 'Server error',
-      error: error.message,
       success: false,
-      status: StatusCodes.INTERNAL_SERVER_ERROR
+      error: err.message
     });
   }
 };
