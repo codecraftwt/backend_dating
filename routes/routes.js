@@ -11,6 +11,7 @@ const favoriteRoutes = require('./favorite');
 const subscriptionRoutes = require('./subscription');
 const paymentRoutes = require('./payment');
 const userDetailsRoutes = require('./userDetails');
+const profileRoutes = require('./dashboard');
 
 const router = express();
 
@@ -29,5 +30,6 @@ router.use('/favorite', favoriteRoutes);
 router.use('/subscription', subscriptionRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/userDetails', userDetailsRoutes);
+router.use('/profile', profileRoutes);
 
 module.exports = router;

@@ -24,8 +24,7 @@ const signin = async (req, res) => {
         const requiredFields = [
             'profileFor', 'gender', 'firstName', 'lastName', 'dob', 'religion',
             'motherTongue', 'country', 'email', 'mobile', 'password', 'height',
-            'weight', 'education', 'maritalStatus', 'searchingFor', 'ethnicity',
-            'childrens', 'wishForChildren'
+            'weight', 'education', 'maritalStatus', 'searchingFor', 'ethnicity'
         ];
         const missingFields = requiredFields.filter(field => !req.body[field] || req.body[field].trim() === '');
         if (missingFields.length > 0) {
