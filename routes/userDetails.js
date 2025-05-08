@@ -10,6 +10,6 @@ router.get('/', (req, res) => {
 
 router.get('/:userId', authenticateMiddleware, getUserDetails);
 router.post('/create', createUserDetails);
-router.put('/:userId', authenticateMiddleware, updateUserDetails);
+router.patch('/:userId', authenticateMiddleware, updateUserDetails);
 
 module.exports = router;

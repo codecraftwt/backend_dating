@@ -36,7 +36,7 @@ router.get('/all-with-profile-matching', authenticateMiddleware, getAllUsersWith
 router.get('/all-by-searchingfor', authenticateMiddleware, getUsersByPreference);
 router.get('/matching-users', authenticateMiddleware, getMatchingUsers);
 router.get('/:id', authenticateMiddleware, getUserProfile);
-router.put('/:id', authenticateMiddleware, updateUserProfile);
+router.patch('/:id', authenticateMiddleware, updateUserProfile);
 router.delete('/:id', authenticateMiddleware, deleteUser);
 
 module.exports = router;
