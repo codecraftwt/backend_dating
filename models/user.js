@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema({
         paymentId: { type: String }, // Payment ID from Stripe or other payment gateway
         status: { type: String, enum: ["active", "inactive", "canceled"], default: "active" },
     },
+    subscriptionPlan:{ type: String },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isFavorited: { type: Boolean, default: false },
     isLiked: { type: Boolean, default: false }
