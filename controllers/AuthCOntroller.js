@@ -117,6 +117,68 @@ const logout = async (req, res) => {
     }
 }
 
+const checkIsEmail = async (req ,res) =>{
+    try {
+        const { email } = req.body;
+        if (!email) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            message: 'Email is required',
+        });
+        }
+         const user = await User.findOne({ email });
+
+        if (user) {
+        return res.status(StatusCodes.OK).json({
+            success: true,
+            message: 'Email is present',
+        });
+        } else {
+        return res.status(StatusCodes.NOT_FOUND).json({
+            success: false,
+            message: 'Email not found',
+        });
+        }
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Server error',
+            error: error.message || 'Unknown error'
+        });
+    }
+}
+
+const resetPassword = async (req, res) => {
+    try {
+      const { email, newPassword, confirmPassword } = req.body;
+      
+    if (!email || !newPassword || !confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'All fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Passwords do not match' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(StatusCodes.OK).json({ success: true, message: 'Password reset successful' });
+        
+    } catch (error) {
+        res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+            message: 'Server error',
+            error: error.message || 'Unknown error'
+        });
+    }
+}
+
 const search = async (req, res) => {
     try {
         const { gender, ageFrom, ageTo, religion, motherTongue } = req.query;
@@ -163,4 +225,4 @@ const sendOtp = async (req, res) => {
     }
 }
 
-module.exports = { signin, login, logout, search, sendOtp }
+module.exports = { signin, login, logout, checkIsEmail, resetPassword, search, sendOtp }
