@@ -8,7 +8,7 @@ const calculateAge = require("../utils/getAge");
 dotenv.config();
 
 const otpGenerator = require('otp-generator');
-const twilio = require('twilio')
+const twilio = require('twilio') 
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
