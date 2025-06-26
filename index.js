@@ -27,17 +27,16 @@ app.use((req, res, next) => {
 });
 
 const corsOptions = {
-    // origin: true,
-    // methods: 'POST,GET,PUT,OPTIONS,DELETE',
-    // allowedHeaders: 'Content-Type, Authorization',
-    // origin: ['http://localhost:4200', 'http://localhost:5000', '*']
-    origin: '*'
+    origin: true,
+    methods: 'POST,GET,PUT,OPTIONS,DELETE',
+    allowedHeaders: 'Content-Type, Authorization',
+    origin: ['http://localhost:4200', 'https://dating-web-app-chi.vercel.app/', '*']
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(bodyParser.json())
-// app.use(bodyParser.urlencoded({ extended: true }))
 
 app.use((req, res, next) => {
     req.io = io;
