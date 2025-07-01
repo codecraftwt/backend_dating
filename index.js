@@ -54,7 +54,7 @@ io.on('connection', (socket) => {
 app.get('/', (req, res) => {
     res.send("Hello, there!! this is dating app's backend");
 });
-
+app.use('/uploads', express.static('uploads'));
 app.use('/api', routes);
 
 const start = async () => {

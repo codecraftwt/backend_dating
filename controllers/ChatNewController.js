@@ -66,7 +66,8 @@ const createRoom = async (req, res) => {
 const sendMessage = async (req, res) => {
     const { senderId, receiverId, message } = req.body;
     const { roomId } = req.params;
-
+     const file = req.file;
+     
     try {
         const room = await Room.findById(roomId);
 
@@ -88,9 +89,19 @@ const sendMessage = async (req, res) => {
         const newMessage = new Message({
             senderId,
             receiverId,
-            message,
         });
 
+        if (message) {
+            newMessage.message = message;
+        }
+
+        if (file) {
+            newMessage.file = {
+                url: `/uploads/${file.filename}`,
+                type: file.mimetype,
+                name: file.originalname
+            };
+        }
         room.chat.push(newMessage);
 
         await room.save();

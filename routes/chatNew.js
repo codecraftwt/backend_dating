@@ -3,6 +3,7 @@ const express = require('express');
 const authenticateMiddleware = require('../middlewares/Authenticcate');
 const { createRoom, sendMessage, getAllRooms, getRoom, deleteMessage, deleteRoom } = require('../controllers/ChatNewController');
 const checkMessageLimit = require('../middlewares/checkMessageLimit');
+const upload = require('../utils/multerConfig');
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -10,7 +11,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create-room', authenticateMiddleware, createRoom);
-router.post('/:roomId/messages', authenticateMiddleware,checkMessageLimit, sendMessage);
+router.post('/:roomId/messages', authenticateMiddleware,checkMessageLimit,upload.single('file'), sendMessage);
 router.get('/rooms/:userId', authenticateMiddleware, getAllRooms);
 router.get('/room/:roomId', authenticateMiddleware, getRoom);
 router.delete('/room/:roomId', authenticateMiddleware, deleteRoom);

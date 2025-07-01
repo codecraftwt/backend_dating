@@ -16,12 +16,16 @@ const roomNewSchema = new mongoose.Schema({
     profile: {
         type: Object,
     },
-    // chat: [{ type: Object, ref: 'Message' }],
     chat: [
         {
             senderId: { type: String, required: true },
             receiverId: { type: String, required: true },
             message: { type: String, required: true },
+            file: {
+            url: { type: String },
+            type: { type: String },
+            name: { type: String },
+        },
             timestamp: { type: Date, default: Date.now },
         }
     ],
