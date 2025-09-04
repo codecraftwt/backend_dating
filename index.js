@@ -7,6 +7,7 @@ const http = require('http');
 const cors = require('cors');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const socketIO = require('socket.io');
+const uploadRouter  = require('./routes/upload');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,7 @@ const port = process.env.PORT || 4000;
 app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+    req.io = io;
     next();
 });
 
@@ -36,6 +38,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
+app.use('/api', uploadRouter); 
 app.use(bodyParser.json())
 
 app.use((req, res, next) => {
@@ -54,7 +57,6 @@ io.on('connection', (socket) => {
 app.get('/', (req, res) => {
     res.send("Hello, there!! this is dating app's backend");
 });
-app.use('/uploads', express.static('uploads'));
 app.use('/api', routes);
 
 const start = async () => {
