@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/create-room', authenticateMiddleware, createRoom);
-router.post('/:roomId/messages', authenticateMiddleware,checkMessageLimit,upload.single('file'), sendMessage);
+router.post('/:roomId/messages', authenticateMiddleware, upload.array('file'), checkMessageLimit, sendMessage);
 router.get('/rooms/:userId', authenticateMiddleware, getAllRooms);
 router.get('/room/:roomId', authenticateMiddleware, getRoom);
 router.delete('/room/:roomId', authenticateMiddleware, deleteRoom);

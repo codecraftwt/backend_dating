@@ -21,11 +21,11 @@ const roomNewSchema = new mongoose.Schema({
             senderId: { type: String, required: true },
             receiverId: { type: String, required: true },
             message: { type: String, required: true },
-            file: {
+            files: [{
             url: { type: String },
             type: { type: String },
             name: { type: String },
-        },
+        }],
             timestamp: { type: Date, default: Date.now },
         }
     ],
